@@ -2,6 +2,7 @@ import net
 import strutils
 import streams
 import httpclient, json
+import threadpool
 
 
 proc query_dns(name: string): string =
@@ -51,21 +52,28 @@ proc parse_dns(data:string): string =
     new_ac.add chr(i.parseInt)
   result = result & new_ac
 
-var socket = newSocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
-
-socket.bindAddr(Port(15353))
-
-var
-  client: Socket
-  address = ""
-  port: Port
-  packet = ""
-
-echo "Listen"
-while true:
-  var data = newStringOfCap(4096)
-  echo socket.recvfrom(data, 1024, address, port)
-  echo data
+proc dns_serve(address, data: string, port: Port, socket: Socket) =
+  var
+    packet = ""
   packet = parse_dns(data)
-
   socket.sendTo(address, port, packet)
+
+proc main() =
+  var
+    socket = newSocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+
+    client: Socket
+    address = ""
+    port: Port
+    packet = ""
+  socket.bindAddr(Port(15353))
+
+
+  echo "Listen"
+  while true:
+    var data = newStringOfCap(4096)
+    echo socket.recvfrom(data, 1024, address, port)
+    echo data
+    spawn dns_serve(address, data, port, socket)
+
+main()
