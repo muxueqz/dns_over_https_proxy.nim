@@ -14,7 +14,10 @@ proc query_dns(name: string): string =
   var response = client.request(url,
                   HttpGet)
   let jsonNode = parseJson(response.body)
-  result = jsonNode["Answer"][0]["data"].getStr()
+  # TODO
+  for answer in jsonNode["Answer"]:
+    if answer["type"].getInt() == 1:
+      result = answer["data"].getStr()
 
 proc parse_dns(data:string): string =
   var
